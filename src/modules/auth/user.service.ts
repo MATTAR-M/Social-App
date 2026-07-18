@@ -36,18 +36,20 @@ import redisService from "../../common/service/redis.service";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { uuidv4 } from "zod";
 import NotificationService from "../../common/service/notification.service";
+import { S3Service } from "../../common/service/s3.service";
 class UserService {
   private readonly _userModel = new UserRepo();
+  private readonly _s3Service = new S3Service();
   private readonly _redisService = RedisService;
   private readonly _tokenService = TokenService;
   private readonly _notificationService = NotificationService;
 
-  constructor() { }
+  constructor() {}
 
   signUp = async (
     req: express.Request,
     res: express.Response,
-    next: express.NextFunction
+    next: express.NextFunction,
   ) => {
     let {
       userName,
@@ -172,10 +174,16 @@ class UserService {
         jwtid,
       },
     });
-    if(fcm){
-      await this._redisService.addFCM({userId:user._id,FCMToken:fcm})
-      const tokens = await this._redisService.getFCMs(user._id)
-      await this._notificationService.sendNotifications({tokens,data:{title:`hello ${user.userName}`,body:`new Login ${new Date()}`}})
+    if (fcm) {
+      await this._redisService.addFCM({ userId: user._id, FCMToken: fcm });
+      const tokens = await this._redisService.getFCMs(user._id);
+      await this._notificationService.sendNotifications({
+        tokens,
+        data: {
+          title: `hello ${user.userName}`,
+          body: `new Login ${new Date()}`,
+        },
+      });
     }
     successResponse({
       res,
@@ -203,7 +211,7 @@ class UserService {
     if (blocked && blocked > 0) {
       throw new AppError(
         `you are blocked from requesting otp, please try again after ${blocked}seconds`,
-        409
+        409,
       );
     }
     const otpTtl = await RedisService.ttl({
@@ -212,7 +220,7 @@ class UserService {
     if (otpTtl && otpTtl > 0) {
       throw new AppError(
         `you can request new otp after ${otpTtl} seconds`,
-        400
+        400,
       );
     }
     const maxOtp = await RedisService.getValue({
@@ -226,7 +234,7 @@ class UserService {
       });
       throw new AppError(
         `you have exceeded the maximum number of otp requests, please try again later`,
-        429
+        429,
       );
     }
     const otp = await generateOtp();
@@ -271,7 +279,7 @@ class UserService {
       filter: {
         email,
         confirmed: { $exists: true },
-      }
+      },
     });
     if (!user) {
       throw new Error("user does not exist", { cause: 404 });
@@ -283,10 +291,15 @@ class UserService {
       message: "otp sent to email successfully",
     });
   };
-  resetPassword = async (req: Request, res: Response, next: NextFunction) => {  
-    const { email, code, password } = req.body
+  resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+    const { email, code, password } = req.body;
 
-    const otpValue = await RedisService.getValue({ key: RedisService.otpKey({ email, subject: emailEventEnum.forgetPassword }) })
+    const otpValue = await RedisService.getValue({
+      key: RedisService.otpKey({
+        email,
+        subject: emailEventEnum.forgetPassword,
+      }),
+    });
     if (!otpValue) {
       throw new Error("otp expired");
     }
@@ -296,38 +309,43 @@ class UserService {
     const user = await this._userModel.findOneAndUpdate({
       filter: {
         email,
-        confirmed: { $exists: true }
+        confirmed: { $exists: true },
       },
       update: {
         password: Hash({ plainText: password }),
-        changeCredentials: new Date()
-      }
-    })
+        changeCredentials: new Date(),
+      },
+    });
     if (!user) {
-      throw new Error("user does not exist")
+      throw new Error("user does not exist");
     }
-    await RedisService.deleteKey({ key: RedisService.otpKey({ email, subject: emailEventEnum.forgetPassword }) })
-    successResponse({ res, status: 201, message: `Password has been Reseted` })
-  }
+    await RedisService.deleteKey({
+      key: RedisService.otpKey({
+        email,
+        subject: emailEventEnum.forgetPassword,
+      }),
+    });
+    successResponse({ res, status: 201, message: `Password has been Reseted` });
+  };
   signUpWithGmail = async (req: Request, res: Response, next: NextFunction) => {
     const { idToken } = req.body;
     console.log(idToken);
     const client = new OAuth2Client();
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: CLIENT_ID!,   
+      audience: CLIENT_ID!,
     });
     const payload = ticket.getPayload();
     const { email, email_verified, name } = payload as TokenPayload;
     let user = await this._userModel.findOne({
-      filter: { email:email! },
+      filter: { email: email! },
     });
     if (!user) {
       user = await this._userModel.create({
-          email:email!,
-          confirmed: email_verified!,
-          userName: name!,
-          provider: providerEnum.google
+        email: email!,
+        confirmed: email_verified!,
+        userName: name!,
+        provider: providerEnum.google,
       });
     }
     if (user.provider == providerEnum.system) {
@@ -340,6 +358,21 @@ class UserService {
         expiresIn: "1h",
         jwtid: randomUUID(),
       },
+    });
+  };
+
+  uploadImage = async (req: Request, res: Response, next: NextFunction) => {
+    const urls = await this._s3Service.uploadFiles({
+      files: req.files as Express.Multer.File[],
+      path: "users/largeFile",
+      
+    });
+
+    successResponse({
+      res,
+      status: 201,
+      message: `image uploaded successfully`,
+      data: urls,
     });
   };
 }

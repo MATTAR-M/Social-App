@@ -13,9 +13,11 @@ import { checkConenction } from "./DB/connectionDB";
 import redisService from "./common/service/redis.service";
 import NotificationService from "./common/service/notification.service";
 import { unknown } from "zod";
+import { createHandler } from "graphql-http/lib/use/express";
 import { GraphQLObjectType, GraphQLSchema, GraphQLString } from "graphql";
 const app: express.Application = express();
 const port: number = Number(PORT);
+
 const bootstrap = () => {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -98,7 +100,3 @@ const bootstrap = () => {
   });
 };
 export default bootstrap;
-function createHandler(arg0: { schema: GraphQLSchema; }): import("express-serve-static-core").RequestHandler<{}, any, any, import("qs").ParsedQs, Record<string, any>> {
-  throw new Error("Function not implemented.");
-}
-
