@@ -13,8 +13,9 @@ authRouter.post("/signin",Validation(UV.singInSchema),UserService.signIn)
 authRouter.patch("/confirmemail",Validation(UV.confirmEmailSchema),UserService.confirmEmail)
 authRouter.patch("/resend-otp",Validation(UV.reSendOtpSchema),UserService.resendOtp)
 authRouter.get("/get-profile",authentication,UserService.getProfile)
-authRouter.post("/upload-image",multerCloud({store_Type: store_Enum.memory}).array("images"),UserService.uploadImage)
-
+authRouter.post("/upload-image",authentication,
+    // multerCloud({store_Type: store_Enum.memory}).array("images"),
+    UserService.uploadImage)
 
 
 export default authRouter

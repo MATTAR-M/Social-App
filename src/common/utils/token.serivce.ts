@@ -2,30 +2,30 @@ import jwt, { JwtPayload, PrivateKey, PublicKey, Secret, SignOptions, VerifyOpti
 
 class TokenService {
     constructor() {}
+    
     generateToken = ({ 
         payload,
-        secritKey, 
+        secretKey, 
         options = {} 
-    } :{
-        payload:object,
-        secritKey: Secret | PrivateKey,
+    }: {
+        payload: object,
+        secretKey: Secret | PrivateKey,
         options?: SignOptions,
-    }):string =>{
-      return jwt.sign(payload, secritKey, options);
+    }): string => {
+      return jwt.sign(payload, secretKey, options);
     };
     
     verifyToken = ({ 
         token, 
-        secritKey, 
+        secretKey, 
         options = {} 
-    }:{
-            token: string,
-            secritKey: Secret | PublicKey,
-            options?: VerifyOptions,
-        }): JwtPayload => {
-      return jwt.verify(token, secritKey, options)as JwtPayload;
+    }: {
+        token: string,
+        secretKey: Secret | PublicKey,
+        options?: VerifyOptions,
+    }): JwtPayload => {
+      return jwt.verify(token, secretKey, options) as JwtPayload;
     };
 }
-
 
 export default new TokenService();

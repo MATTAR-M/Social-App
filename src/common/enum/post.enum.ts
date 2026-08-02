@@ -8,3 +8,8 @@ export enum availabilityEnum {
     private =  "private",
     friends = "friends",
 }
+
+export enum OnModelEnum {
+    Post = "Post",
+    Comment = "Comment"
+}

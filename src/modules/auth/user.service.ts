@@ -152,7 +152,7 @@ class UserService {
     const jwtid = randomUUID();
     const accessToken = this._tokenService.generateToken({
       payload: { id: user._id, email: user.email },
-      secritKey:
+      secretKey:
         user?.role == RoleEnum.user ? SECRET_KEY_USER! : SECRET_KEY_ADMIN!,
       options: {
         expiresIn: "1h",
@@ -165,7 +165,7 @@ class UserService {
     });
     const refreshToken = this._tokenService.generateToken({
       payload: { id: user._id, email: user.email },
-      secritKey:
+      secretKey:
         user?.role == RoleEnum.user
           ? Refresh_SECRET_KEY_USER!
           : Refresh_SECRET_KEY_ADMIN!,
@@ -353,7 +353,7 @@ class UserService {
     }
     const accessToken = this._tokenService.generateToken({
       payload: { id: user._id, email: user.email },
-      secritKey: SECRET_KEY_USER!,
+      secretKey: SECRET_KEY_USER!,
       options: {
         expiresIn: "1h",
         jwtid: randomUUID(),
@@ -362,18 +362,33 @@ class UserService {
   };
 
   uploadImage = async (req: Request, res: Response, next: NextFunction) => {
-    const urls = await this._s3Service.uploadFiles({
-      files: req.files as Express.Multer.File[],
-      path: "users/largeFile",
+    // const urls = await this._s3Service.uploadFiles({
+    //   files: req.files as Express.Multer.File[],
+    //   path: `users/${req?.user?._id}`,
       
+    // });
+    const {fileName, ContentType} = req.body;
+    const {url,Key} = await this._s3Service.createPresignedUrl({
+      fileName,
+      ContentType,
+      path: `users/${req?.user?._id}/profile`,
     });
+// await this._userModel.findOneAndUpdate({
+//   filter:{_id: req?.user?._id},
+//   update: {profileImage:Key},
+// })
 
     successResponse({
       res,
       status: 201,
       message: `image uploaded successfully`,
-      data: urls,
+      data: { url,Key },
     });
   };
+
+
+
+
+
 }
 export default new UserService();

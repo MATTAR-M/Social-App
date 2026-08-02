@@ -1,19 +1,19 @@
 import mongoose, { Types } from "mongoose";
 import { providerEnum, RoleEnum } from "../../common/enum/user.enum";
-import { AllowCommentsEnum ,availabilityEnum} from "../../common/enum/post.enum";
+import { AllowCommentsEnum ,availabilityEnum, OnModelEnum} from "../../common/enum/post.enum";
 // import {GenderEnum}
 
-export interface IPost {
+export interface IComment {
 content?:string,
 attachments?:string[],
 createdBy: Types.ObjectId,
 tags?:Types.ObjectId[],
 likes?: Types.ObjectId[],
-allowComments?:AllowCommentsEnum,
-availability?:availabilityEnum,
 folderId: Types.ObjectId,
+refId: Types.ObjectId,
+OnModel: OnModelEnum,
 }
-const postSchema = new mongoose.Schema<IPost>({
+const commentSchema = new mongoose.Schema<IComment>({
     content: { type: String, trim: true, max: 500,required: function(this){
       return !this.attachments?.length;
     } },
@@ -21,9 +21,9 @@ const postSchema = new mongoose.Schema<IPost>({
     createdBy: { type: Types.ObjectId, ref: "User", required: true },
     tags: { type: Types.ObjectId, ref: "User" },
     likes: { type: Types.ObjectId, ref: "User" },
-    allowComments: { type: String, enum: AllowCommentsEnum, default: AllowCommentsEnum.allow },
-    availability: { type: String, enum: availabilityEnum, default: availabilityEnum.public },
-    folderId: String
+    folderId: String,
+    refId: { type: Types.ObjectId, refPath: "Post",required: true },
+    OnModel: { type: String, enum: OnModelEnum, required: true },
   },
   {
     timestamps: true,
@@ -33,12 +33,12 @@ const postSchema = new mongoose.Schema<IPost>({
     toObject: { virtuals: true },
   }
 );
-postSchema.virtual("comments", {
+commentSchema.virtual("comments", {
   ref: "Comment",
   localField: "_id",
   foreignField: "refId",
 })
 
-const postModel =
-  mongoose.models.Post || mongoose.model<IPost>("Post", postSchema);
-export default postModel;
+const commentModel =
+  mongoose.models.Comment || mongoose.model<IComment>("Comment", commentSchema);
+export default commentModel;

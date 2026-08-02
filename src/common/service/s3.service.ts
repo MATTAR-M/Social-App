@@ -1,4 +1,8 @@
 import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
   ObjectCannedACL,
   PutObjectCommand,
   S3Client,
@@ -14,6 +18,7 @@ import { store_Enum } from "../enum/multer.enum";
 import fs from "node:fs";
 import { AppError } from "../utils/globalErrorHandling";
 import { Upload } from "@aws-sdk/lib-storage";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export class S3Service {
   private s3Client: S3Client;
@@ -27,6 +32,11 @@ export class S3Service {
       },
     });
   }
+
+
+
+
+
   async uploadFile({
     file,
     store_Type = store_Enum.memory,
@@ -52,6 +62,11 @@ export class S3Service {
     await this.s3Client.send(command);
     return command.input.Key;
   }
+
+
+
+
+
   async uploadLargeFile({
     file,
     store_Type = store_Enum.disk,
@@ -79,29 +94,122 @@ export class S3Service {
     const result = await command.done();
     return result.Key as string;
   }
+
+
+
+
   async uploadFiles({
-files,
-store_Type = store_Enum. memory,
-path = "General",
-ACL = ObjectCannedACL.private,
-isLarge = false
-  }:{
-files: Express.Multer.File[],
-store_Type   ?: store_Enum,
-path ?: string
-ACL ?: ObjectCannedACL,
-isLarge ?: boolean
-  }){
-let urls: string[] = []
-if (isLarge) {
-urls = await Promise.all(files.map((file) => {
-return this.uploadLargeFile({ file, store_Type, path, ACL })
-}))
-} else {
-urls = await Promise.all(files.map((file) => {
-return this.uploadFile({ file, store_Type, path, ACL })
-}))
+    files,
+    store_Type = store_Enum.memory,
+    path = "General",
+    ACL = ObjectCannedACL.private,
+    isLarge = false,
+  }: {
+    files: Express.Multer.File[];
+    store_Type?: store_Enum;
+    path?: string;
+    ACL?: ObjectCannedACL;
+    isLarge?: boolean;
+  }) {
+    let urls: string[] = [];
+    if (isLarge) {
+      urls = await Promise.all(
+        files.map((file) => {
+          return this.uploadLargeFile({ file, store_Type, path, ACL });
+        }),
+      );
+    } else {
+      urls = await Promise.all(
+        files.map((file) => {
+          return this.uploadFile({ file, store_Type, path, ACL });
+        }),
+      );
+    }
+    return urls;
+  }
+
+
+  async createPresignedUrl({
+    path,
+    fileName,
+    expiresIn = 60,
+    ContentType,
+  }: {
+    path: string;
+    fileName: string;
+    expiresIn?: number;
+    ContentType?: string;
+  }) {
+    const Key = `social-media-app/${path}/${randomUUID()}___${fileName}`;
+    const command = new PutObjectCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Key,
+      ContentType,
+    });
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+    return { url, Key };
+  }
+  
+async getFile(Key:string){
+
+  const command = new GetObjectCommand({
+    Bucket: AWS_BUCKET_NAME,
+    Key
+  })
+  return await this.s3Client.send(command)
 }
-return urls
+
+async getPresignedUrl({
+    Key,
+    expiresIn = 60,
+    download
+  }: {
+    Key: string;
+    expiresIn?: number;
+    download?: string|undefined
+  }) {
+    console.log(download,"download")
+    const command = new GetObjectCommand({
+      Bucket: AWS_BUCKET_NAME,
+      Key,
+      ResponseContentDisposition: download ? `attachment; filename="${Key.split("/").pop()}"`: undefined
+     });
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+    return url;
+  }
+async getFiles(folderName:string){
+  const command = new ListObjectsV2Command({
+    Bucket : AWS_BUCKET_NAME,
+    Prefix : `social-media-app/${folderName}`
+  })
+  return await this.s3Client.send(command)
 }
+async deleteFile(Key:string){
+  const command = new DeleteObjectCommand({
+    Bucket : AWS_BUCKET_NAME,
+    Key
+  })
+  return await this.s3Client.send(command)
+}
+async deleteFiles(Keys:string[]){
+  const keyMapped = Keys.map((k)=>{
+    return{Key:k}
+  })
+  const command = new DeleteObjectsCommand({
+    Bucket : AWS_BUCKET_NAME,
+    Delete:{
+      Objects:keyMapped
+    }
+  })
+  return await this.s3Client.send(command)
+}
+async deleteFolders(folderName:string){
+  const data = await this.getFiles(folderName)
+  const keyMapped = data?.Contents?.map((k)=>{
+    return k.Key
+  })
+  return await this.deleteFiles(keyMapped as string[])
+}
+
+
 }

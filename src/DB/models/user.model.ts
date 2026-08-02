@@ -14,10 +14,12 @@ export interface IUser {
   address?: string;
   gender?: string;
   role: string;
+  profileImage?: string;
   confirmed?: boolean;
   createdAt: Date;
   updatedAt: Date;
   provider?: string;
+  friends?:Types.ObjectId[]
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -35,6 +37,8 @@ const userSchema = new mongoose.Schema<IUser>(
     role: { type: String, default: RoleEnum.user, required: true },
     confirmed: { type: Boolean, default: false },
     provider: { type: String, enum: [providerEnum.system, providerEnum.google],default: providerEnum.system },
+    profileImage: { type: String, default: "" },
+    friends:[{type:Types.ObjectId, ref:"User"}]
   },
   {
     timestamps: true,

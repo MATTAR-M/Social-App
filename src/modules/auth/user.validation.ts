@@ -23,7 +23,7 @@ export const singInSchema = {
   body: reSendOtpSchema.body.safeExtend({
     email: z.string().email().toLowerCase().trim(),
     password: z.string().min(6),
-    fcm: z.string()
+    fcm: z.string().optional(),
   })
 }
 
