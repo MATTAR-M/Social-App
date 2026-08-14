@@ -4,7 +4,7 @@ import * as z from "zod";
 import { AppError } from "../../common/utils/globalErrorHandling";
 import { signUpSchema } from "./user.validation";
 import userModel, { IUser } from "../../DB/models/user.model";
-import { HydratedDocument, Model } from "mongoose";
+import { HydratedDocument, Model, Types } from "mongoose";
 import BaseRepo from "../../DB/repos/user.repo";
 import UserRepo from "../../DB/repos/user.repo";
 import { encrypt } from "../../common/utils/security/encrypt.security";
@@ -37,6 +37,11 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { uuidv4 } from "zod";
 import NotificationService from "../../common/service/notification.service";
 import { S3Service } from "../../common/service/s3.service";
+const users = [
+  { id: "1", name: "John Doe", gender: "male" },
+  { id: "2", name: "Jane Smith", gender: "female" },
+  { id: "3", name: "Alice Johnson", gender: "female" },
+];
 class UserService {
   private readonly _userModel = new UserRepo();
   private readonly _s3Service = new S3Service();
@@ -365,30 +370,35 @@ class UserService {
     // const urls = await this._s3Service.uploadFiles({
     //   files: req.files as Express.Multer.File[],
     //   path: `users/${req?.user?._id}`,
-      
+
     // });
-    const {fileName, ContentType} = req.body;
-    const {url,Key} = await this._s3Service.createPresignedUrl({
+    const { fileName, ContentType } = req.body;
+    const { url, Key } = await this._s3Service.createPresignedUrl({
       fileName,
       ContentType,
       path: `users/${req?.user?._id}/profile`,
     });
-// await this._userModel.findOneAndUpdate({
-//   filter:{_id: req?.user?._id},
-//   update: {profileImage:Key},
-// })
+    // await this._userModel.findOneAndUpdate({
+    //   filter:{_id: req?.user?._id},
+    //   update: {profileImage:Key},
+    // })
 
     successResponse({
       res,
       status: 201,
       message: `image uploaded successfully`,
-      data: { url,Key },
+      data: { url, Key },
     });
   };
 
-
-
-
-
+  //========================================================================graphQL===================================================================//
+  getUsers = async () => {
+    return await this._userModel.find({ filter: {} });
+  };
+  getUser = async (userId:Types.ObjectId) => {
+    return await this._userModel.findOne({ filter: { _id: userId } });
+  };
+  
+  
 }
 export default new UserService();

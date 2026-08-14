@@ -21,6 +21,8 @@ import { pipeline } from "node:stream/promises";
 import { url } from "node:inspector";
 import postRouter from "./modules/Post/post.controller";
 import commentRouter from "./modules/Comments/comment.controller";
+import { gQL_schema } from "./modules/graphql/graphql.schema";
+import { authentication } from "./common/middleware/authentication";
 const app: express.Application = express();
 const port: number = Number(PORT);
 
@@ -47,27 +49,27 @@ const bootstrap = () => {
   app.use(cors(), helmet(), limiter);
   app.use("/auth", authRouter);
   app.use(`/posts`, postRouter);
-  const schema = new GraphQLSchema({
-    query: new GraphQLObjectType({
-      name: "query",
-      description: "the root query",
-      fields: {
-        hello: {
-          type: GraphQLString,
-          resolve: () => {
-            return "Hello, world!";
-          },
-        },
-        hi: {
-          type: GraphQLString,
-          resolve: () => {
-            return "hello from social media app";
-          },
-        },
-      },
-    }),
-  });
-  app.use("/graphql", createHandler({ schema }));
+  // const schema = new GraphQLSchema({
+  //   query: new GraphQLObjectType({
+  //     name: "query",
+  //     description: "the root query",
+  //     fields: {
+  //       hello: {
+  //         type: GraphQLString,
+  //         resolve: () => {
+  //           return "Hello, world!";
+  //         },
+  //       },
+  //       hi: {
+  //         type: GraphQLString,
+  //         resolve: () => {
+  //           return "hello from social media app";
+  //         },
+  //       },
+  //     },
+  //   }),
+  // });
+  app.use("/graphql",authentication, createHandler({schema: gQL_schema,context: (req, res) => ({ req, res })}));
 
   app.get(
     "/",

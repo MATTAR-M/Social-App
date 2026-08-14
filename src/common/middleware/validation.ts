@@ -1,11 +1,12 @@
 import {Request,Response,NextFunction} from "express";
 import { ZodType } from "zod";
 import { AppError } from "../utils/globalErrorHandling";
+import { GraphQLError } from "graphql";
 // FIX 1: Explicitly use express.Request instead of the global DOM Request
 type reqType = keyof Request;
 type schemaType = Partial<Record<reqType, ZodType>>;
 
-export const Validation = (schema: schemaType) => {
+export const Validation= (schema: schemaType) => {
   return async (
     req: Request,
     res: Response,
@@ -37,3 +38,25 @@ export const Validation = (schema: schemaType) => {
     next();
   };
 };
+export const ValidationGQL = async (schema:ZodType, data: any) => {
+    const errorValidation = [];
+    const result = await schema.safeParseAsync(data);
+      if (!result.success) {
+        const errors = result.error.issues.map((err:any) => {
+          return {
+            path: err.path[0],
+            message: err.message,
+          };
+        });
+        errorValidation.push(...errors);
+    }
+    if (errorValidation.length > 0) {
+      throw new GraphQLError("Validation Error", {
+        extensions: {
+          code: "BAD_USER_INPUT",
+          statusCode: 400,
+          validationErrors: errorValidation,
+        },
+      });
+    }
+  };

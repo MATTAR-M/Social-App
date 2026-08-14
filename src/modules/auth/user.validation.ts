@@ -5,7 +5,9 @@ import { GenderEnum } from "../../common/enum/user.enum";
 
 export type ISignup = z.infer<typeof signUpSchema.body>
 
-
+export const getUserSchema = z.strictObject({ 
+  token: z.string()
+})
 
 export const confirmEmailSchema = {
   body: z.object({
