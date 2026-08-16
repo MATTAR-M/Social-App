@@ -22,7 +22,8 @@ import { url } from "node:inspector";
 import postRouter from "./modules/Post/post.controller";
 import commentRouter from "./modules/Comments/comment.controller";
 import { gQL_schema } from "./modules/graphql/graphql.schema";
-import { authentication } from "./common/middleware/authentication";
+import { authentication, decodeToken_and_fetchUser } from "./common/middleware/authentication";
+import { Server, Socket } from "socket.io";
 const app: express.Application = express();
 const port: number = Number(PORT);
 
@@ -69,7 +70,14 @@ const bootstrap = () => {
   //     },
   //   }),
   // });
-  app.use("/graphql",authentication, createHandler({schema: gQL_schema,context: (req, res) => ({ req, res })}));
+  app.use(
+    "/graphql",
+    authentication,
+    createHandler({
+      schema: gQL_schema,
+      context: (req, res) => ({ req, res }),
+    }),
+  );
 
   app.get(
     "/",
@@ -158,8 +166,31 @@ const bootstrap = () => {
   });
 
   app.use(globalErrorHandler);
-  app.listen(port, () => {
+  const httpServer = app.listen(port, () => {
     console.log(`server is running on port ${port}🫡  🫡`);
+  });
+  const io = new Server(httpServer,{
+    cors:{
+      origin:"*",
+    }
+  });
+  io.use (async(socket,next)=>{
+  try {
+    console.log("socket")
+    const {user} = await decodeToken_and_fetchUser(socket.handshake.auth.authorization)
+    socket.data.user = user
+    next()
+  } catch (error:any) {
+    next(error)    
+  }
+})
+  io.on("connection", (socket) => {
+    console.log(socket.id)
+    socket.on("hi", (data) => {
+      
+      console.log(data);
+      socket.emit("Reply", { message: "hi from BackEnd" });
+    });
   });
 };
 export default bootstrap;

@@ -10,7 +10,7 @@
   "author": "",
   "type": "commonjs",
   "license": "ISC",
-  "description": "",
+  "description": "Social media App",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
@@ -51,7 +51,16 @@
     "multer": "^2.2.0",
     "nodemailer": "^8.0.5",
     "redis": "^5.12.1",
+    "socket.io": "^4.8.3",
     "uuid": "^14.0.0",
     "zod": "^4.3.6"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MATTAR-M/Social-App.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MATTAR-M/Social-App/issues"
+  },
+  "homepage": "https://github.com/MATTAR-M/Social-App#readme"
 }

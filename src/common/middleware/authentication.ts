@@ -7,14 +7,7 @@ import redisService from "../service/redis.service.js";
 import TokenService from "../utils/token.serivce.js"; // Cleaned up duplicate imports
 
 const userModel = new UserRepo();
-
-export const authentication = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const { authorization }: any = req.headers;
-
+export const decodeToken_and_fetchUser = async (authorization:string)=>{
   if (!authorization) {
     throw new AppError("token does not exist");
   }
@@ -68,7 +61,17 @@ export const authentication = async (
   if (isRevoked) {
     throw new AppError("token is revoked");
   }
+  return {user , decoded}
 
+}
+export const authentication = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { authorization }: any = req.headers;
+  const {user,decoded} = await decodeToken_and_fetchUser(authorization)
+  
   req.user = user;
   req.decoded = decoded;
   next();
