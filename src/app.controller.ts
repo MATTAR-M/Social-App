@@ -22,12 +22,18 @@ import { url } from "node:inspector";
 import postRouter from "./modules/Post/post.controller";
 import commentRouter from "./modules/Comments/comment.controller";
 import { gQL_schema } from "./modules/graphql/graphql.schema";
-import { authentication, decodeToken_and_fetchUser } from "./common/middleware/authentication";
+import {
+  authentication,
+  decodeToken_and_fetchUser,
+} from "./common/middleware/authentication";
 import { Server, Socket } from "socket.io";
+import socketGateway from "./modules/realtime/socket.gateway";
+import chatRouter from "./modules/chat/realtime/chat.controller";
+
 const app: express.Application = express();
 const port: number = Number(PORT);
 
-const bootstrap = () => {
+const bootstrap = async () => {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -50,6 +56,7 @@ const bootstrap = () => {
   app.use(cors(), helmet(), limiter);
   app.use("/auth", authRouter);
   app.use(`/posts`, postRouter);
+  app.use('/chat',chatRouter)
   // const schema = new GraphQLSchema({
   //   query: new GraphQLObjectType({
   //     name: "query",
@@ -169,28 +176,6 @@ const bootstrap = () => {
   const httpServer = app.listen(port, () => {
     console.log(`server is running on port ${port}🫡  🫡`);
   });
-  const io = new Server(httpServer,{
-    cors:{
-      origin:"*",
-    }
-  });
-  io.use (async(socket,next)=>{
-  try {
-    console.log("socket")
-    const {user} = await decodeToken_and_fetchUser(socket.handshake.auth.authorization)
-    socket.data.user = user
-    next()
-  } catch (error:any) {
-    next(error)    
-  }
-})
-  io.on("connection", (socket) => {
-    console.log(socket.id)
-    socket.on("hi", (data) => {
-      
-      console.log(data);
-      socket.emit("Reply", { message: "hi from BackEnd" });
-    });
-  });
+  await socketGateway.initIo(httpServer);
 };
 export default bootstrap;

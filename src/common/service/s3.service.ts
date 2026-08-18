@@ -33,10 +33,6 @@ export class S3Service {
     });
   }
 
-
-
-
-
   async uploadFile({
     file,
     store_Type = store_Enum.memory,

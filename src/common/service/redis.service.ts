@@ -125,7 +125,7 @@ import { emailEventEnum } from "../enum/email.enum";
   };
   
 nkey (userId:Types.ObjectId){
-  return `user:FCM:${userId}`
+  return `user:Socket:${userId}`
 }
 
 async addFCM({userId,FCMToken}:{userId:Types.ObjectId,FCMToken:string}){
@@ -142,6 +142,28 @@ async hasFCMs(userId:Types.ObjectId){
 }
 async removeFCMUser(userId:Types.ObjectId){
   return await this.client.del(this.nkey(userId))
+}
+
+//==============================================================================socket redis===========================================================================//
+  
+skey (userId:Types.ObjectId){
+  return `user:Socket:${userId}`
+}
+
+async addSocket({userId,SocketToken}:{userId:Types.ObjectId,SocketToken:string}){
+  return await this.client.sAdd(this.skey(userId),SocketToken)
+}
+async removeSocket({userId,SocketToken}:{userId:Types.ObjectId,SocketToken:string}){
+  return await this.client.sRem(this.skey(userId),SocketToken)
+}
+async getSockets(userId:Types.ObjectId){
+  return await this.client.sMembers(this.skey(userId))
+}
+async hasSockets(userId:Types.ObjectId){
+  return await this.client.sCard(this.skey(userId))
+}
+async removeSocketUser(userId:Types.ObjectId){
+  return await this.client.del(this.skey(userId))
 }
 }
 

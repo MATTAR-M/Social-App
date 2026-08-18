@@ -37,6 +37,7 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { uuidv4 } from "zod";
 import NotificationService from "../../common/service/notification.service";
 import { S3Service } from "../../common/service/s3.service";
+import ChatRepo from "../../DB/repos/chat.repo";
 const users = [
   { id: "1", name: "John Doe", gender: "male" },
   { id: "2", name: "Jane Smith", gender: "female" },
@@ -45,6 +46,7 @@ const users = [
 class UserService {
   private readonly _userModel = new UserRepo();
   private readonly _s3Service = new S3Service();
+  private readonly _chatRepo = new ChatRepo();
   private readonly _redisService = RedisService;
   private readonly _tokenService = TokenService;
   private readonly _notificationService = NotificationService;
@@ -197,10 +199,29 @@ class UserService {
     });
   };
   getProfile = async (req: Request, res: Response, next: NextFunction) => {
+   const user = await this._userModel.findOne({
+    filter:{
+      
+    },
+    projection:{undefined},
+    options:{
+      populate:[{
+        path:"friends"
+      }]
+    }
+   })
+   const groups = await this._chatRepo.find({
+    filter:{
+      participants:{$in:[req?.user?._id]},
+      group:{$exists:true}
+    }
+   })
+
+   
     successResponse({
       res,
       message: "Profile fetched successfully",
-      data: { user: req.user },
+      data: { user,groups },
     });
   };
   sendEmailotp = async ({
