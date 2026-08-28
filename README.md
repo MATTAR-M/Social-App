@@ -22,19 +22,18 @@ A scalable and robust backend infrastructure for a social media platform. This A
 ## ⚙️ Local Installation & Setup
 
 **1. Clone the repository:**
-\`\`\`bash
+  ```bash
 git clone https://github.com/yourusername/social-media-api.git
 cd social-media-api
-\`\`\`
-
+```
 **2. Install dependencies:**
-\`\`\`bash
+  ```bash
 npm install
-\`\`\`
+```
 
 **3. Configure Environment Variables:**
 Create a `.env` file in the root directory based on the provided `.env.example`. You will need:
-\`\`\`env
+```env
 PORT=3000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
@@ -42,12 +41,12 @@ AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_REGION=your_aws_region
 AWS_BUCKET_NAME=your_s3_bucket_name
-\`\`\`
+```
 
 **4. Start the development server:**
-\`\`\`bash
+  ```bash
 npm run dev
-\`\`\`
+```
 *The server will start on `http://localhost:3000` and the GraphQL playground will be available at `http://localhost:3000/graphql`.*
 
 ## 📖 API Documentation
